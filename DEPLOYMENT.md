@@ -336,4 +336,152 @@ For deployment issues:
 1. Check the health check: `python utils/health_check.py`
 2. Review logs: `docker-compose logs -f`
 3. Verify environment: `docker-compose exec learn2reel env`
-4. Test API connectivity manually 
+4. Test API connectivity manually
+
+# Deployment Guide for Learn2Reel
+
+## 🎯 Quick Start - Hugging Face Spaces (Recommended)
+
+### Why Hugging Face Spaces?
+- Perfect for ML/AI projects
+- Free tier available
+- Automatic Docker builds
+- Easy integration with ML models
+- Great for showcasing AI projects
+
+### Steps to Deploy on HF Spaces:
+
+1. **Create a Hugging Face Account**
+   - Go to [huggingface.co](https://huggingface.co)
+   - Sign up for a free account
+
+2. **Create a New Space**
+   - Click "New Space" on your profile
+   - Choose a name (e.g., "learn2reel")
+   - Select "Docker" as the SDK
+   - Choose "Public" or "Private"
+
+3. **Upload Your Files**
+   Your project already has all the required files:
+   - ✅ `Dockerfile` - Defines the container
+   - ✅ `requirements.txt` - Python dependencies
+   - ✅ `README.md` - Project documentation
+   - ✅ `ui/streamlit_app.py` - Main application
+
+4. **Automatic Deployment**
+   - HF Spaces will automatically detect your Dockerfile
+   - It will build and deploy your container
+   - Your app will be available at `https://huggingface.co/spaces/YOUR_USERNAME/learn2reel`
+
+### Configuration for HF Spaces
+
+Your current Dockerfile is already optimized for deployment. The key settings:
+
+```dockerfile
+# These settings work perfectly for HF Spaces
+ENV STREAMLIT_SERVER_PORT=8501
+ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
+ENV STREAMLIT_SERVER_HEADLESS=true
+EXPOSE 8501
+```
+
+## 🚀 Alternative Deployment Options
+
+### Railway (Simple & Fast)
+1. Go to [railway.app](https://railway.app)
+2. Connect your GitHub repository
+3. Railway auto-detects your Dockerfile
+4. Deploy with one click
+
+### Render (Free Tier Available)
+1. Create account on [render.com](https://render.com)
+2. Create new "Web Service"
+3. Connect your GitHub repo
+4. Set build command: `docker build -t learn2reel .`
+5. Set start command: `docker run -p 8501:8501 learn2reel`
+
+### Google Cloud Run (Production)
+```bash
+# Build and push to Google Container Registry
+gcloud builds submit --tag gcr.io/YOUR_PROJECT/learn2reel
+
+# Deploy to Cloud Run
+gcloud run deploy learn2reel \
+  --image gcr.io/YOUR_PROJECT/learn2reel \
+  --platform managed \
+  --allow-unauthenticated \
+  --port 8501
+```
+
+### AWS ECS/Fargate (Enterprise)
+```bash
+# Build and push to Amazon ECR
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com
+docker tag learn2reel:latest YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/learn2reel:latest
+docker push YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/learn2reel:latest
+```
+
+## 🔧 Environment Variables
+
+For production deployments, you might want to set these environment variables:
+
+```bash
+# API Keys (if needed)
+OPENAI_API_KEY=your_openai_key
+ELEVENLABS_API_KEY=your_elevenlabs_key
+
+# App Configuration
+STREAMLIT_SERVER_PORT=8501
+STREAMLIT_SERVER_ADDRESS=0.0.0.0
+STREAMLIT_SERVER_HEADLESS=true
+STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+```
+
+## 📊 Monitoring & Health Checks
+
+Your Dockerfile includes a health check:
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8501/_stcore/health || exit 1
+```
+
+This ensures your app is running properly and can be monitored by deployment platforms.
+
+## 🐛 Troubleshooting
+
+### Common Issues:
+
+1. **Port Issues**
+   - Ensure port 8501 is exposed in Dockerfile
+   - Check that STREAMLIT_SERVER_ADDRESS=0.0.0.0
+
+2. **Memory Issues**
+   - Your app uses FFmpeg and ML models
+   - Consider increasing memory limits on deployment platforms
+
+3. **Build Failures**
+   - Check that all dependencies are in requirements.txt
+   - Ensure Dockerfile installs system dependencies (ffmpeg)
+
+### Debug Commands:
+```bash
+# Test locally first
+docker build -t learn2reel .
+docker run -p 8501:8501 learn2reel
+
+# Check container logs
+docker logs <container_id>
+
+# Enter container for debugging
+docker exec -it <container_id> /bin/bash
+```
+
+## 🎉 Success!
+
+Once deployed, your Learn2Reel app will be accessible via web browser and can:
+- Generate AI-powered content
+- Create videos with voiceovers
+- Process images and text
+- All through a beautiful Streamlit interface
+
+The Docker containerization ensures consistent behavior across all deployment platforms! 
