@@ -127,6 +127,18 @@ class VideoAgent:
         except:
             return None
     
+    def get_video_duration(self, video_path):
+        """Get video duration using FFmpeg"""
+        try:
+            cmd = [
+                "ffprobe", "-v", "quiet", "-show_entries", 
+                "format=duration", "-of", "csv=p=0", video_path
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            return float(result.stdout.strip())
+        except:
+            return None
+    
     def analyze_voiceover_timing(self, voiceover_path, script):
         """Analyze voiceover audio to get more accurate word timing (placeholder for future enhancement)"""
         # This is a placeholder for future implementation
@@ -148,17 +160,42 @@ class VideoAgent:
     
     def combine_video_audio(self, video_path, audio_path, output_path, duration):
         """Combine video and audio using FFmpeg, ensuring video matches audio duration"""
-        cmd = [
-            "ffmpeg", "-y",
-            "-i", video_path,
-            "-i", audio_path,
-            "-c:v", "libx264",
-            "-c:a", "aac",
-            "-shortest",  # This ensures the output duration matches the shorter of video/audio
-            "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2",
-            "-r", "24",
-            output_path
-        ]
+        # Get video duration to check if we need to loop it
+        video_duration = self.get_video_duration(video_path)
+        
+        if video_duration and video_duration < duration:
+            # If video is shorter than audio, loop it
+            print(f"Video duration ({video_duration}s) is shorter than audio ({duration}s). Looping video...")
+            cmd = [
+                "ffmpeg", "-y",
+                "-stream_loop", "-1",  # Loop the video input
+                "-i", video_path,
+                "-i", audio_path,
+                "-c:v", "libx264",
+                "-c:a", "aac",
+                "-map", "0:v:0",  # Use video from first input (background video)
+                "-map", "1:a:0",  # Use audio from second input (voiceover)
+                "-shortest",  # This ensures the output duration matches the shorter of video/audio
+                "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2",
+                "-r", "24",
+                output_path
+            ]
+        else:
+            # Normal case - video is longer than or equal to audio
+            cmd = [
+                "ffmpeg", "-y",
+                "-i", video_path,
+                "-i", audio_path,
+                "-c:v", "libx264",
+                "-c:a", "aac",
+                "-map", "0:v:0",  # Use video from first input (background video)
+                "-map", "1:a:0",  # Use audio from second input (voiceover)
+                "-shortest",  # This ensures the output duration matches the shorter of video/audio
+                "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2",
+                "-r", "24",
+                output_path
+            ]
+        
         subprocess.run(cmd, check=True)
         print(f"Video combined with audio. Final duration: {duration} seconds")
     
@@ -176,6 +213,12 @@ class VideoAgent:
         filter_parts = []
         font_path = "assets/Montserrat-SemiBold.ttf"
         
+        # Check if font file exists
+        if not os.path.exists(font_path):
+            print(f"[WARNING] Font file not found: {font_path}")
+            print("[DEBUG] Using default font")
+            font_path = ""  # Use default font
+        
         for chunk in subtitle_chunks:
             text = chunk['text']
             if not text or not text.strip():
@@ -191,8 +234,20 @@ class VideoAgent:
                         continue
                     escaped_text = line.replace("'", "\\'")
                     y_offset = line_idx * (config.subtitle_font_size + 10)
+                                    # Build filter with or without custom font
+                if font_path:
                     subtitle_filter = (
                         f"drawtext=fontfile='{font_path}':text='{escaped_text}':"
+                        f"fontcolor=white:"
+                        f"fontsize={config.subtitle_font_size}:"
+                        f"x=(w-text_w)/2:"
+                        f"y=(h/4)+{y_offset}:"
+                        f"borderw=2:bordercolor=black:"
+                        f"enable='between(t,{chunk['start_time']},{chunk['end_time']})'"
+                    )
+                else:
+                    subtitle_filter = (
+                        f"drawtext=text='{escaped_text}':"
                         f"fontcolor=white:"
                         f"fontsize={config.subtitle_font_size}:"
                         f"x=(w-text_w)/2:"
@@ -204,37 +259,58 @@ class VideoAgent:
             else:
                 # Single line subtitle
                 escaped_text = text.replace("'", "\\'")
-                subtitle_filter = (
-                    f"drawtext=fontfile='{font_path}':text='{escaped_text}':"
-                    f"fontcolor=white:"
-                    f"fontsize={config.subtitle_font_size}:"
-                    f"x=(w-text_w)/2:"
-                    f"y=h/4:"
-                    f"borderw=2:bordercolor=black:"
-                    f"enable='between(t,{chunk['start_time']},{chunk['end_time']})'"
-                )
+                # Build filter with or without custom font
+                if font_path:
+                    subtitle_filter = (
+                        f"drawtext=fontfile='{font_path}':text='{escaped_text}':"
+                        f"fontcolor=white:"
+                        f"fontsize={config.subtitle_font_size}:"
+                        f"x=(w-text_w)/2:"
+                        f"y=h/4:"
+                        f"borderw=2:bordercolor=black:"
+                        f"enable='between(t,{chunk['start_time']},{chunk['end_time']})'"
+                    )
+                else:
+                    subtitle_filter = (
+                        f"drawtext=text='{escaped_text}':"
+                        f"fontcolor=white:"
+                        f"fontsize={config.subtitle_font_size}:"
+                        f"x=(w-text_w)/2:"
+                        f"y=h/4:"
+                        f"borderw=2:bordercolor=black:"
+                        f"enable='between(t,{chunk['start_time']},{chunk['end_time']})'"
+                    )
                 filter_parts.append(subtitle_filter)
         
-        filter_str = ",".join(filter_parts)
-        print("[DEBUG] FFmpeg subtitle filter:", filter_str)
+        # Combine all subtitle filters
+        if filter_parts:
+            filter_str = ",".join(filter_parts)
+            print(f"[DEBUG] Using {len(filter_parts)} subtitle filters")
+            print("[DEBUG] Subtitle chunks:")
+            for i, chunk in enumerate(subtitle_chunks):
+                print(f"  Chunk {i}: '{chunk['text']}' ({chunk['start_time']:.2f}s - {chunk['end_time']:.2f}s)")
+        else:
+            print("[DEBUG] No subtitle filters generated, using fallback")
+            self.add_text_overlay(input_path, script, output_path)
+            return
         
         # Apply subtitles using FFmpeg
         cmd = [
             "ffmpeg", "-y",
             "-i", input_path,
             "-vf", filter_str,
-            "-map", "0:v:0", "-map", "0:a:0",
             "-c:v", "libx264",
-            "-c:a", "aac",
-            "-shortest",
+            "-c:a", "copy",  # Preserve original audio
             output_path
         ]
         
         try:
+            print(f"[DEBUG] Running FFmpeg command: {' '.join(cmd)}")
             subprocess.run(cmd, check=True)
             print(f"Subtitles added successfully with custom font")
         except subprocess.CalledProcessError as e:
             print(f"Error adding subtitles: {e}")
+            print("[DEBUG] Falling back to simple text overlay")
             # Fallback to simple text overlay
             self.add_text_overlay(input_path, script, output_path)
     
@@ -303,15 +379,19 @@ class VideoAgent:
             start_time = (start_word_index / total_words) * duration
             end_time = (end_word_index / total_words) * duration
             
-            # Ensure minimum subtitle duration (0.5 seconds)
-            min_duration = 0.5
+            # Ensure minimum subtitle duration (1.0 seconds for better readability)
+            min_duration = 1.0
             if end_time - start_time < min_duration:
                 end_time = start_time + min_duration
             
-            # Ensure maximum subtitle duration (4 seconds)
-            max_duration = 4.0
+            # Ensure maximum subtitle duration (3 seconds)
+            max_duration = 3.0
             if end_time - start_time > max_duration:
                 end_time = start_time + max_duration
+            
+            # Add a small gap between subtitles for better readability
+            if subtitle_chunks and start_time < subtitle_chunks[-1]['end_time'] + 0.2:
+                start_time = subtitle_chunks[-1]['end_time'] + 0.2
             
             subtitle_chunks.append({
                 'text': chunk_text,
@@ -409,7 +489,7 @@ class VideoAgent:
         cmd = [
             "ffmpeg", "-y",
             "-i", input_path,
-            "-vf", filter_str,  # Pass as single argument
+            "-vf", filter_str,
             "-c:a", "copy",
             output_path
         ]

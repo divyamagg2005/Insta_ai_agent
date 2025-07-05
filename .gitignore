@@ -1,5 +1,6 @@
-# Environment variables
+# Configuration files
 .env
+learn2reel_config.json
 
 # Python
 __pycache__/

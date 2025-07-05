@@ -1,19 +1,21 @@
 import os
 from instagrapi import Client
-from dotenv import load_dotenv
+from config import config
 import time
-
-load_dotenv()
 
 class InstagramAgent:
     def __init__(self):
         self.client = Client()
-        self.username = os.getenv('IG_USERNAME')
-        self.password = os.getenv('IG_PASSWORD')
+        self.username = config.ig_username
+        self.password = config.ig_password
         self.logged_in = False
     
     def login(self):
         """Login to Instagram"""
+        if not self.username or not self.password:
+            print("Error: Instagram credentials not configured")
+            return False
+            
         try:
             # Try to load existing session
             session_file = "session.json"

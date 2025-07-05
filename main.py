@@ -5,7 +5,7 @@ Automate Instagram Reels creation from learning content
 
 import os
 import sys
-from dotenv import load_dotenv
+import logging
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -14,21 +14,51 @@ from agents.content_agent import ContentAgent
 from agents.voice_agent import VoiceAgent
 from agents.video_agent import VideoAgent
 from agents.instagram_agent import InstagramAgent
+from config import config
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('learn2reel.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 def main():
-    print("🎬 Learn2Reel - AI Agent for Instagram Reels")
+    print("🧠 BrainRot Learning - AI Agent for Instagram Reels")
     print("=" * 50)
     
-    # Load environment variables
-    load_dotenv()
-    
-    # Check if required environment variables are set
-    required_vars = ['GEMINI_API_KEY', 'ELEVENLABS_API_KEY', 'IG_USERNAME', 'IG_PASSWORD']
-    missing_vars = [var for var in required_vars if not os.getenv(var)]
-    
-    if missing_vars:
-        print(f"❌ Missing required environment variables: {', '.join(missing_vars)}")
-        print("Please check your .env file")
+    try:
+        # Check if configuration exists
+        if not os.path.exists(config.config_file):
+            print("❌ No configuration found.")
+            print("Please use the web interface to configure your API keys:")
+            print("   streamlit run ui/streamlit_app.py")
+            return
+        
+        # Validate configuration
+        errors = config.validate()
+        
+        if errors:
+            print("❌ Configuration errors found:")
+            for error in errors:
+                print(f"  - {error}")
+            print("\nPlease use the web interface to update your configuration:")
+            print("   streamlit run ui/streamlit_app.py")
+            return
+        
+        logger.info("Configuration validated successfully")
+        
+        # Check optional Instagram credentials
+        if not (config.ig_username and config.ig_password):
+            print("⚠️ Instagram credentials not configured - auto-upload will be disabled")
+            logger.warning("Instagram credentials not configured")
+    except Exception as e:
+        print(f"❌ Error during initialization: {e}")
+        logger.error(f"Initialization error: {e}")
         return
     
     # Initialize agents

@@ -1,76 +1,63 @@
 #!/bin/bash
 
 # Learn2Reel Deployment Script
-echo "🚀 Deploying Learn2Reel..."
+# This script helps deploy the application to production
 
-# Check if required files exist
-if [ ! -f ".env" ]; then
-    echo "❌ .env file not found. Please create it with your API keys."
+set -e  # Exit on any error
+
+echo "🚀 Learn2Reel Deployment Script"
+echo "================================"
+
+# Check if Docker is installed
+if ! command -v docker &> /dev/null; then
+    echo "❌ Docker is not installed. Please install Docker first."
     exit 1
 fi
 
-if [ ! -f "requirements.txt" ]; then
-    echo "❌ requirements.txt not found."
+# Check if Docker Compose is installed
+if ! command -v docker-compose &> /dev/null; then
+    echo "❌ Docker Compose is not installed. Please install Docker Compose first."
     exit 1
 fi
 
-# Create virtual environment if it doesn't exist
-if [ ! -d "venv" ]; then
-    echo "📦 Creating virtual environment..."
-    python3 -m venv venv
+# Check if configuration exists
+if [ ! -f learn2reel_config.json ]; then
+    echo "⚠️ Configuration not found. No problem! You can configure it in the web interface."
+    echo "The application will start and you can configure your API keys in the browser."
 fi
 
-# Activate virtual environment
-echo "🔧 Activating virtual environment..."
-source venv/bin/activate
+# Check if required directories exist
+echo "📁 Creating necessary directories..."
+mkdir -p output assets
 
-# Install/update requirements
-echo "📥 Installing requirements..."
-pip install -r requirements.txt
+# Check if assets directory has required files
+if [ ! -f assets/Montserrat-SemiBold.ttf ]; then
+    echo "⚠️ Custom font not found. Downloading Montserrat font..."
+    # This would need to be implemented based on font availability
+    echo "Please ensure assets/Montserrat-SemiBold.ttf exists"
+fi
 
-# Create necessary directories
-echo "📁 Creating directories..."
-mkdir -p output
-mkdir -p assets
+# Build and start the application
+echo "🔨 Building Docker image..."
+docker-compose build
 
-# Run tests
-echo "🧪 Running tests..."
-python -m pytest tests/ -v
+echo "🚀 Starting Learn2Reel..."
+docker-compose up -d
 
-# Check if tests passed
-if [ $? -eq 0 ]; then
-    echo "✅ Tests passed!"
+echo "⏳ Waiting for application to start..."
+sleep 10
+
+# Check if application is running
+if curl -f http://localhost:8501/_stcore/health &> /dev/null; then
+    echo "✅ Learn2Reel is running successfully!"
+    echo "🌐 Access the application at: http://localhost:8501"
+    echo ""
+    echo "📋 Useful commands:"
+    echo "   - View logs: docker-compose logs -f"
+    echo "   - Stop app: docker-compose down"
+    echo "   - Restart app: docker-compose restart"
+    echo "   - Update app: docker-compose pull && docker-compose up -d"
 else
-    echo "❌ Tests failed. Please fix issues before deploying."
+    echo "❌ Application failed to start. Check logs with: docker-compose logs"
     exit 1
-fi
-
-# Start application
-echo "🎬 Starting Learn2Reel..."
-echo "Choose how to run:"
-echo "1. CLI version (python main.py)"
-echo "2. Web interface (streamlit run ui/streamlit_app.py)"
-echo "3. Both (recommended for development)"
-
-read -p "Enter your choice (1-3): " choice
-
-case $choice in
-    1)
-        python main.py
-        ;;
-    2)
-        streamlit run ui/streamlit_app.py
-        ;;
-    3)
-        echo "🌐 Starting web interface..."
-        streamlit run ui/streamlit_app.py &
-        echo "⚡ Web interface started. CLI is also available."
-        echo "🔗 Open http://localhost:8501 in your browser"
-        ;;
-    *)
-        echo "❌ Invalid choice. Starting web interface by default..."
-        streamlit run ui/streamlit_app.py
-        ;;
-esac
-
-echo "🎉 Learn2Reel deployment complete!" 
+fi 

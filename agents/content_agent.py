@@ -1,12 +1,12 @@
 import google.generativeai as genai
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
+from config import config
 
 class ContentAgent:
     def __init__(self):
-        genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
+        if not config.gemini_api_key:
+            print("Error: Gemini API key not configured")
+            return
+        genai.configure(api_key=config.gemini_api_key)
         self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
     
     def generate_script(self, learning_content, duration=30):

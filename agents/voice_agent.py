@@ -1,17 +1,20 @@
 import os
 import requests
-from dotenv import load_dotenv
-
-load_dotenv()
+from config import config
 
 class VoiceAgent:
     def __init__(self):
-        self.api_key = os.getenv('ELEVENLABS_API_KEY')
-        self.voice_id = os.getenv('ELEVENLABS_VOICE_ID', 'EXAVITQu4vr4xnSDxMaL')  # Default voice
+        self.api_key = config.elevenlabs_api_key
+        self.voice_id = config.elevenlabs_voice_id
         self.base_url = "https://api.elevenlabs.io/v1"
     
     def generate_voiceover(self, script, output_path="output/voiceover.mp3"):
         """Generate voiceover from script using ElevenLabs API"""
+        
+        # Check if API key is available
+        if not self.api_key:
+            print("Error: ElevenLabs API key not configured")
+            return None
         
         # Clean the script text - remove formatting characters
         cleaned_script = self.clean_script_text(script)
@@ -31,8 +34,8 @@ class VoiceAgent:
             "text": cleaned_script,
             "model_id": "eleven_monolingual_v1",
             "voice_settings": {
-                "stability": 0.5,
-                "similarity_boost": 0.75,
+                "stability": config.voice_stability,
+                "similarity_boost": config.voice_similarity_boost,
                 "style": 0.0,
                 "use_speaker_boost": True
             },

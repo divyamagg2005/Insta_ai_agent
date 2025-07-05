@@ -1,41 +1,67 @@
-from setuptools import setup, find_packages
+#!/usr/bin/env python3
+"""
+Learn2Reel Setup Script
+First-time configuration and setup
+"""
 
-with open("README.md", "r", encoding="utf-8") as fh:
-    long_description = fh.read()
+import os
+import sys
+import subprocess
 
-with open("requirements.txt", "r", encoding="utf-8") as fh:
-    requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+def main():
+    print("🎬 Learn2Reel Setup")
+    print("=" * 30)
+    
+    # Check if Python dependencies are installed
+    print("📦 Checking dependencies...")
+    try:
+        import streamlit
+        import google.generativeai
+        import elevenlabs
+        print("✅ All dependencies are installed")
+    except ImportError as e:
+        print(f"❌ Missing dependency: {e}")
+        print("Installing dependencies...")
+        subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
+    
+    # Check if FFmpeg is available
+    print("\n🎬 Checking FFmpeg...")
+    try:
+        result = subprocess.run(['ffmpeg', '-version'], capture_output=True, text=True)
+        if result.returncode == 0:
+            print("✅ FFmpeg is available")
+        else:
+            print("❌ FFmpeg not found")
+            print("Please install FFmpeg:")
+            print("- Ubuntu/Debian: sudo apt-get install ffmpeg")
+            print("- macOS: brew install ffmpeg")
+            print("- Windows: Download from https://ffmpeg.org/")
+    except FileNotFoundError:
+        print("❌ FFmpeg not found")
+        print("Please install FFmpeg:")
+        print("- Ubuntu/Debian: sudo apt-get install ffmpeg")
+        print("- macOS: brew install ffmpeg")
+        print("- Windows: Download from https://ffmpeg.org/")
+    
+    # Create necessary directories
+    print("\n📁 Creating directories...")
+    os.makedirs("output", exist_ok=True)
+    os.makedirs("assets", exist_ok=True)
+    print("✅ Directories created")
+    
+    # Check if configuration exists
+    print("\n⚙️ Checking configuration...")
+    if os.path.exists("learn2reel_config.json"):
+        print("✅ Configuration file exists")
+    else:
+        print("⚠️ No configuration found")
+        print("Run 'python main.py' to set up your configuration")
+    
+    print("\n🎉 Setup complete!")
+    print("\nNext steps:")
+    print("1. Run 'python main.py' to configure your API keys")
+    print("2. Run 'streamlit run ui/streamlit_app.py' for the web interface")
+    print("3. Or run 'python main.py' for the command-line interface")
 
-setup(
-    name="learn2reel",
-    version="1.0.0",
-    author="Your Name",
-    author_email="your.email@example.com",
-    description="AI Agent system to automate Instagram Reels creation from learning content",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/learn2reel",
-    packages=find_packages(),
-    classifiers=[
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-    ],
-    python_requires=">=3.8",
-    install_requires=requirements,
-    entry_points={
-        "console_scripts": [
-            "learn2reel=main:main",
-        ],
-    },
-    include_package_data=True,
-    package_data={
-        "learn2reel": ["assets/*"],
-    },
-) 
+if __name__ == "__main__":
+    main() 

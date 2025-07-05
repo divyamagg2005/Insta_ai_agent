@@ -1,7 +1,8 @@
-streamlit
-google-generativeai
-elevenlabs
-instagrapi
-python-dotenv
-requests
-Pillow
+streamlit>=1.28.0
+google-generativeai>=0.3.0
+elevenlabs>=0.2.0
+instagrapi>=2.0.0
+requests>=2.31.0
+Pillow>=10.0.0
+numpy>=1.24.0
+ffmpeg-python>=0.2.0

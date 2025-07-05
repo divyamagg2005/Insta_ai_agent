@@ -1,60 +1,63 @@
-# 🎬 Learn2Reel - AI Agent for Instagram Reels
+# 🧠 BrainRot Learning - AI Agent for Instagram Reels
 
-Transform your daily learning into engaging Instagram Reels automatically using AI agents.
+Transform your daily learning into viral Instagram Reels automatically using AI agents.
+
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)](https://docs.docker.com/)
+[![Python](https://img.shields.io/badge/Python-3.9+-green?logo=python)](https://python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-Web%20UI-red?logo=streamlit)](https://streamlit.io/)
 
 ## ✨ Features
 
-- **AI Script Generation**: Gemini 2.5 Flash creates engaging reel scripts
+- **AI Script Generation**: Gemini 2.5 Flash creates viral-style reel scripts
 - **Voice Synthesis**: ElevenLabs generates natural-sounding voiceovers
 - **Video Creation**: MoviePy combines audio with visuals
 - **🎬 Synchronized Subtitles**: Smart subtitle system with customizable timing and appearance
 - **Auto-Upload**: Instagrapi handles Instagram posting
 - **Web Interface**: Streamlit UI for easy interaction
+- **🔐 Privacy First**: Your credentials are never stored on our servers
 
 ## 🚀 Quick Start
 
-1. **Clone the repository**
-```bash
-git clone https://github.com/yourusername/learn2reel.git
-cd learn2reel
-```
+### Using Docker (Recommended)
 
-2. **Install dependencies**
-```bash
-pip install -r requirements.txt
-```
+1. **Clone the repository:**
+   ```bash
+   git clone <your-repo-url>
+   cd learn2reel
+   ```
 
-3. **Configure environment variables**
-Create a `.env` file with your API keys:
-```
-GEMINI_API_KEY=your_gemini_key_here
-ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
-ELEVENLABS_VOICE_ID=your_voice_id_here
-IG_USERNAME=your_instagram_username
-IG_PASSWORD=your_instagram_password
+2. **Deploy with one command:**
+   ```bash
+   chmod +x scripts/deploy.sh
+   ./scripts/deploy.sh
+   ```
 
-# Subtitle Configuration (Optional)
-SUBTITLE_ENABLED=true
-SUBTITLE_FONT_SIZE=50
-SUBTITLE_FONT_COLOR=white
-SUBTITLE_BACKGROUND_COLOR=black@0.7
-SUBTITLE_POSITION_Y=h-text_h-50
-SUBTITLE_MIN_DURATION=1.0
-SUBTITLE_MAX_DURATION=4.0
-SUBTITLE_GAP=0.2
-```
+3. **Access the application:**
+   - Web UI: http://localhost:8501
+   - Configure your API keys in the web interface
 
-4. **Run the application**
+### Manual Installation
 
-**CLI Version:**
-```bash
-python main.py
-```
+1. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-**Web Interface:**
-```bash
-streamlit run ui/streamlit_app.py
-```
+2. **Install FFmpeg:**
+   - **Ubuntu/Debian:** `sudo apt-get install ffmpeg`
+   - **macOS:** `brew install ffmpeg`
+   - **Windows:** Download from https://ffmpeg.org/
+
+3. **Run the application:**
+   ```bash
+   # Web interface (recommended)
+   streamlit run ui/streamlit_app.py
+   
+   # Configure your API keys in the web interface
+   
+   # Command line (after configuration)
+   python main.py
+   ```
 
 ## 🎬 Subtitle Features
 
