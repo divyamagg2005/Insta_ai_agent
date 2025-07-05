@@ -146,8 +146,10 @@ class VideoAgent:
             self.add_text_overlay(input_path, script, output_path)
             return
         
-        # Create subtitle filter (multi-chunk, timed)
+        # Create subtitle filter (multi-chunk, timed) with custom font
         filter_parts = []
+        font_path = "assets/Montserrat-SemiBold.ttf"
+        
         for chunk in subtitle_chunks:
             text = chunk['text']
             if not text or not text.strip():
@@ -155,7 +157,7 @@ class VideoAgent:
             # Since we're only dealing with clean words and spaces, minimal escaping needed
             escaped_text = text.replace("'", "\\'")
             subtitle_filter = (
-                f"drawtext=text='{escaped_text}':"
+                f"drawtext=fontfile='{font_path}':text='{escaped_text}':"
                 f"fontcolor=white:"
                 f"fontsize={config.subtitle_font_size}:"
                 f"x=(w-text_w)/2:"
@@ -181,7 +183,7 @@ class VideoAgent:
         
         try:
             subprocess.run(cmd, check=True)
-            print(f"Subtitles added successfully")
+            print(f"Subtitles added successfully with custom font")
         except subprocess.CalledProcessError as e:
             print(f"Error adding subtitles: {e}")
             # Fallback to simple text overlay
@@ -289,8 +291,9 @@ class VideoAgent:
         # Escape text for FFmpeg
         escaped_text = escape_for_drawtext(text)
         
-        # Create filter string
-        filter_str = f"drawtext=text='{escaped_text}':fontcolor=white:fontsize=60:x=(w-text_w)/2:y=h/4:borderw=2:bordercolor=black:shadowcolor=black:shadowx=2:shadowy=2"
+        # Create filter string with custom font
+        font_path = "assets/Montserrat-SemiBold.ttf"
+        filter_str = f"drawtext=fontfile='{font_path}':text='{escaped_text}':fontcolor=white:fontsize=60:x=(w-text_w)/2:y=h/4:borderw=2:bordercolor=black:shadowcolor=black:shadowx=2:shadowy=2"
         
         cmd = [
             "ffmpeg", "-y",
