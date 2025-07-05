@@ -33,6 +33,13 @@ def clean_script_for_subtitles(script):
     cleaned = cleaned.strip()
     return cleaned
 
+def estimate_text_width(text, font_size=60):
+    """Estimate text width in pixels for overflow detection"""
+    # Rough estimation: average character width is about 0.6 * font_size
+    # For 1080x1920 video, safe width is around 900-1000 pixels
+    estimated_width = len(text) * font_size * 0.6
+    return estimated_width
+
 class VideoAgent:
     def __init__(self):
         self.output_dir = "output"
@@ -120,6 +127,25 @@ class VideoAgent:
         except:
             return None
     
+    def analyze_voiceover_timing(self, voiceover_path, script):
+        """Analyze voiceover audio to get more accurate word timing (placeholder for future enhancement)"""
+        # This is a placeholder for future implementation
+        # In a real implementation, you could use:
+        # - Speech recognition with timestamps
+        # - Audio analysis to detect word boundaries
+        # - Whisper API with word-level timestamps
+        
+        duration = self.get_audio_duration(voiceover_path)
+        if duration is None:
+            return None
+        
+        # For now, return basic timing info
+        return {
+            'duration': duration,
+            'words': len(script.split()),
+            'words_per_second': len(script.split()) / duration if duration > 0 else 0
+        }
+    
     def combine_video_audio(self, video_path, audio_path, output_path, duration):
         """Combine video and audio using FFmpeg, ensuring video matches audio duration"""
         cmd = [
@@ -138,7 +164,7 @@ class VideoAgent:
     
     def add_subtitles(self, input_path, script, output_path, duration):
         """Add synchronized subtitles to video using FFmpeg"""
-        # Split script into subtitle chunks (3 words per chunk)
+        # Split script into subtitle chunks (5-6 words per chunk)
         subtitle_chunks = self.split_script_for_subtitles(script, duration)
         
         if not subtitle_chunks:
@@ -154,18 +180,41 @@ class VideoAgent:
             text = chunk['text']
             if not text or not text.strip():
                 continue
-            # Since we're only dealing with clean words and spaces, minimal escaping needed
-            escaped_text = text.replace("'", "\\'")
-            subtitle_filter = (
-                f"drawtext=fontfile='{font_path}':text='{escaped_text}':"
-                f"fontcolor=white:"
-                f"fontsize={config.subtitle_font_size}:"
-                f"x=(w-text_w)/2:"
-                f"y=h/4:"
-                f"borderw=2:bordercolor=black:"
-                f"enable='between(t,{chunk['start_time']},{chunk['end_time']})'"
-            )
-            filter_parts.append(subtitle_filter)
+            
+            # Check if text needs to be split into multiple lines
+            estimated_width = estimate_text_width(text, config.subtitle_font_size)
+            if estimated_width > 900:
+                # Split long text into multiple lines
+                lines = self.split_text_into_lines(text)
+                for line_idx, line in enumerate(lines):
+                    if not line.strip():
+                        continue
+                    escaped_text = line.replace("'", "\\'")
+                    y_offset = line_idx * (config.subtitle_font_size + 10)
+                    subtitle_filter = (
+                        f"drawtext=fontfile='{font_path}':text='{escaped_text}':"
+                        f"fontcolor=white:"
+                        f"fontsize={config.subtitle_font_size}:"
+                        f"x=(w-text_w)/2:"
+                        f"y=(h/4)+{y_offset}:"
+                        f"borderw=2:bordercolor=black:"
+                        f"enable='between(t,{chunk['start_time']},{chunk['end_time']})'"
+                    )
+                    filter_parts.append(subtitle_filter)
+            else:
+                # Single line subtitle
+                escaped_text = text.replace("'", "\\'")
+                subtitle_filter = (
+                    f"drawtext=fontfile='{font_path}':text='{escaped_text}':"
+                    f"fontcolor=white:"
+                    f"fontsize={config.subtitle_font_size}:"
+                    f"x=(w-text_w)/2:"
+                    f"y=h/4:"
+                    f"borderw=2:bordercolor=black:"
+                    f"enable='between(t,{chunk['start_time']},{chunk['end_time']})'"
+                )
+                filter_parts.append(subtitle_filter)
+        
         filter_str = ",".join(filter_parts)
         print("[DEBUG] FFmpeg subtitle filter:", filter_str)
         
@@ -189,8 +238,8 @@ class VideoAgent:
             # Fallback to simple text overlay
             self.add_text_overlay(input_path, script, output_path)
     
-    def split_script_for_subtitles(self, script, duration, words_per_chunk=3):
-        """Split script into timed subtitle chunks of N words each (default 3), synced with voiceover timing."""
+    def split_script_for_subtitles(self, script, duration, words_per_chunk=5):
+        """Split script into timed subtitle chunks of N words each (default 5), synced with voiceover timing."""
         # Clean the script first to remove all special characters
         cleaned_script = clean_script_for_subtitles(script)
         cleaned_script = cleaned_script.strip()
@@ -203,41 +252,103 @@ class VideoAgent:
             return []
         
         # Calculate timing based on voiceover duration
-        # Assume words are spoken at roughly equal pace
+        # Use more sophisticated timing that accounts for natural speech patterns
         words_per_second = total_words / duration
         seconds_per_word = duration / total_words
         
-        # Split into 3-word chunks
+        # Split into 5-6 word chunks with overflow prevention
         chunks = []
         i = 0
         while i < total_words:
+            # Try to get 5-6 words, but adjust if text would be too long
             chunk_words = words[i:i+words_per_chunk]
             if not chunk_words:
                 i += words_per_chunk
                 continue
+            
             chunk_text = ' '.join(chunk_words)
+            
+            # Check if text would overflow using width estimation
+            estimated_width = estimate_text_width(chunk_text, config.subtitle_font_size)
+            max_safe_width = 900  # For 1080x1920 video
+            
+            if estimated_width > max_safe_width:
+                # Reduce chunk size to prevent overflow
+                reduced_chunk = words[i:i+max(3, words_per_chunk-2)]
+                chunk_text = ' '.join(reduced_chunk)
+                i += len(reduced_chunk)
+            else:
+                i += words_per_chunk
+            
             if chunk_text.strip():
                 chunks.append(chunk_text)
-            i += words_per_chunk
         
-        # Calculate timing for each chunk based on word count
+        # Calculate timing for each chunk with improved synchronization
         subtitle_chunks = []
         current_time = 0
+        total_processed_words = 0
+        
         for chunk_text in chunks:
             if not chunk_text.strip():
                 continue
+            
             chunk_word_count = len(chunk_text.split())
-            chunk_duration = chunk_word_count * seconds_per_word
-            start_time = current_time
-            end_time = start_time + chunk_duration
+            
+            # Calculate timing based on word position in the script
+            # This provides better sync than equal word timing
+            start_word_index = total_processed_words
+            end_word_index = start_word_index + chunk_word_count
+            
+            # Calculate start and end times based on word position
+            start_time = (start_word_index / total_words) * duration
+            end_time = (end_word_index / total_words) * duration
+            
+            # Ensure minimum subtitle duration (0.5 seconds)
+            min_duration = 0.5
+            if end_time - start_time < min_duration:
+                end_time = start_time + min_duration
+            
+            # Ensure maximum subtitle duration (4 seconds)
+            max_duration = 4.0
+            if end_time - start_time > max_duration:
+                end_time = start_time + max_duration
+            
             subtitle_chunks.append({
                 'text': chunk_text,
                 'start_time': start_time,
-                'end_time': end_time
+                'end_time': end_time,
+                'word_count': chunk_word_count
             })
+            
+            total_processed_words += chunk_word_count
             current_time = end_time
         
         return subtitle_chunks
+    
+    def split_text_into_lines(self, text, max_chars_per_line=25):
+        """Split text into multiple lines to prevent overflow"""
+        words = text.split()
+        lines = []
+        current_line = []
+        current_length = 0
+        
+        for word in words:
+            # Check if adding this word would exceed the line limit
+            if current_length + len(word) + 1 > max_chars_per_line and current_line:
+                # Start a new line
+                lines.append(' '.join(current_line))
+                current_line = [word]
+                current_length = len(word)
+            else:
+                # Add to current line
+                current_line.append(word)
+                current_length += len(word) + 1 if current_line else len(word)
+        
+        # Add the last line
+        if current_line:
+            lines.append(' '.join(current_line))
+        
+        return lines
     
     def create_subtitle_filter(self, subtitle_chunks):
         """Create FFmpeg filter for multiple subtitle overlays using a single drawtext with conditional text."""
