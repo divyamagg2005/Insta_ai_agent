@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  learn2reel:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./output:/app/output
+      - ./.env:/app/.env
+    environment:
+      - PYTHONUNBUFFERED=1 

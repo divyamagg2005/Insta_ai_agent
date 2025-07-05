@@ -1,0 +1,113 @@
+## 📂 Project Structure
+```
+learn2reel/
+├── agents/
+│   ├── content_agent.py        # Gemini 2.5 script generator
+│   ├── voice_agent.py          # ElevenLabs voice generation
+│   ├── video_agent.py          # MoviePy video composition
+│   └── instagram_agent.py      # Reel uploader using instagrapi
+│
+├── assets/
+│   └── stock_clip.mp4          # Default visual footage
+│
+├── output/
+│   ├── voiceover.mp3           # Generated AI audio
+│   └── final_reel.mp4          # Final Instagram-ready video
+│
+├── ui/
+│   └── streamlit_app.py        # Web interface to run the app
+│
+├── .env                        # Secret keys and credentials
+├── main.py                     # Command-line version of the app
+├── requirements.txt            # Python dependencies
+├── README.md                   # Setup & usage instructions
+└── LICENSE                     # (Optional) open-source license
+```
+
+---
+
+## 🔄 Workflow (End-to-End)
+1. 🧠 **User Input**: You type what you learned today about LLMs.
+2. 📝 **Script Creation**: `content_agent.py` generates a reel-friendly script using Gemini 2.5 Flash.
+3. 🎙️ **Voiceover**: `voice_agent.py` turns the script into a natural-sounding MP3.
+4. 🎬 **Video Assembly**: `video_agent.py` adds visuals and subtitles.
+5. 📲 **Post to Instagram**: `instagram_agent.py` logs in and uploads the reel.
+
+You can run all of this through:
+- `main.py` for command-line automation
+- `streamlit_app.py` for a visual interface
+
+---
+
+## ✅ Features
+- Modular agent architecture
+- Gemini-powered scripting (2.5 Flash)
+- Realistic ElevenLabs voice output
+- Seamless MoviePy video integration
+- Secure Instagram login with Instagrapi
+- Full deployment-ready Streamlit UI
+
+---
+
+## 🚀 Deployment Options
+- **Local run** via terminal or Streamlit
+- **Streamlit Cloud**: for free web hosting of the UI
+- **PythonAnywhere / Replit / Railway**: backend job scheduler
+- **GitHub Actions + CRON**: automate daily post with saved learning summaries
+
+---
+
+## 🔐 Security Notes
+- Credentials and API keys must be stored in `.env`
+- Add `.env`, `/output`, and Instagram session cookies to `.gitignore`
+- Never commit `.env` to public GitHub
+
+---
+
+## 📌 Sample `.env` File
+```
+GEMINI_API_KEY=your_gemini_key_here
+ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
+ELEVENLABS_VOICE_ID=your_voice_id_here
+IG_USERNAME=your_instagram_username
+IG_PASSWORD=your_instagram_password
+```
+
+---
+
+## 📥 Installation Guide
+```bash
+git clone https://github.com/your-username/learn2reel.git
+cd learn2reel
+python -m venv venv
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+pip install -r requirements.txt
+```
+
+---
+
+## 🧪 Running The App
+### 1. CLI Version
+```bash
+python main.py
+```
+
+### 2. Streamlit Web UI
+```bash
+streamlit run ui/streamlit_app.py
+```
+
+---
+
+## ✨ Future Add-ons
+- Auto thumbnail generator (using DALL·E or SDXL)
+- Weekly Notion logs of what was learned
+- Topic suggestion engine based on trending GenAI news
+- Multi-language support
+
+---
+
+Let me know if you'd like me to also generate:
+- A polished `GitHub README.md`
+- A `.gitignore` file
+- A zip file for immediate download

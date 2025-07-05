@@ -1,0 +1,7 @@
+streamlit
+google-generativeai
+elevenlabs
+instagrapi
+python-dotenv
+requests
+Pillow
