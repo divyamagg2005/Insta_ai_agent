@@ -23,7 +23,7 @@ class ContentAgent:
         - Use hook in the first 3 seconds
         - Break down complex concepts into simple terms
         - Include a call-to-action at the end
-        - Script should be 15-25 seconds when spoken at normal pace (about 40-60 words)
+        - Script should be 20-25 seconds when spoken at normal pace (about 80-100 words)
         - Use short sentences and pauses for emphasis
         - Make it sound natural, not robotic
         - Be extremely concise - every word counts
