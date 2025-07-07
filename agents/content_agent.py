@@ -7,7 +7,7 @@ class ContentAgent:
             print("Error: Gemini API key not configured")
             return
         genai.configure(api_key=config.gemini_api_key)
-        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        self.model = genai.GenerativeModel('gemini-2.5-flash')
     
     def generate_script(self, learning_content, duration=30):
         """Generate a reel-friendly script from learning content"""
@@ -19,19 +19,18 @@ class ContentAgent:
         Learning Content: {learning_content}
         
         Guidelines:
-        - Keep it conversational and engaging
-        - Use hook in the first 3 seconds
-        - Break down complex concepts into simple terms
-        - Include a call-to-action at the end
-        - Script should be 20-25 seconds when spoken at normal pace (about 80-100 words)
-        - Use short sentences and pauses for emphasis
-        - Make it sound natural, not robotic
-        - Be extremely concise - every word counts
-        - Focus on ONE key point only
-        - IMPORTANT: Use ONLY plain text - NO hashtags, asterisks, underscores, or special formatting characters
-        - The script will be converted to speech, so avoid any characters that would be read aloud
+        - Make it conversational, friendly, and engaging.
+        - Start with a strong hook in the first 3 seconds.
+        - Explain the key concept in simple, clear language.
+        - Use natural, flowing sentences—avoid choppy or robotic phrasing.
+        - Include a call-to-action at the end.
+        - The script should be 20-25 seconds when spoken at a normal pace (about 80-100 words).
+        - Be concise, but let the script sound like a real person talking, not a list of short statements.
+        - Focus on ONE key point only.
+        - IMPORTANT: Use ONLY plain text—NO hashtags, asterisks, underscores, or special formatting characters.
+        - The script will be converted to speech, so avoid any characters that would be read aloud.
         
-        Format your response as a clean script without any additional formatting or explanations.
+        Format your response as a single, clean script with no extra formatting or explanations.
         """
         
         try:
